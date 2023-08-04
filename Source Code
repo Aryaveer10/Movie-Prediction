@@ -1,0 +1,176 @@
+Sys.setenv(HADOOP_OPTS="-Djava.library.path=/usr/local/hadoop/lib/native")
+Sys.setenv(HADOOP_HOME="/usr/local/hadoop")
+Sys.setenv(HADOOP_CMD="/usr/local/hadoop/bin/hadoop")
+Sys.setenv(HADOOP_STREAMING="/usr/local/hadoop/share/hadoop/tools/lib/hadoop-streaming2.6.5.jar")
+Sys.setenv(JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64")
+Sys.setenv(HADOOP_OPTS="-Djava.library.path=/usr/local/hadoop/lib/native")
+Sys.setenv(HADOOP_HOME="/usr/local/hadoop")
+Sys.setenv(HADOOP_CMD="/usr/local/hadoop/bin/hadoop")
+Sys.setenv(HADOOP_STREAMING="/usr/local/hadoop/share/hadoop/tools/lib/hadoop-streaming2.6.5.jar")
+Sys.setenv(JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64")
+install.packages("rhdfs")
+install.packages("rmr2")
+library(rhdfs)
+library(rmr2)
+hdfs.init()
+library(dplyr)
+movie.data <- read.csv("big_data_movies.csv")
+head(movie.data)
+tail(movie.data)
+str(movie.data)
+new.movie.data <- subset(movie.data, select=-c(Timestamp))
+colnames(new.movie.data) <-
+c('Age','Gender','Genre','Purpose','Length','Language','Platform','Rating','Cast factors','External 
+factors')
+head(new.movie.data)
+tail(new.movie.data)
+str(new.movie.data)
+colSums(is.na(new.movie.data)) # missing data
+mapreduce.for.freq <- function(str){
+ 
+ hdfs_input = to.dfs(new.movie.data[,c(str)])
+ 
+ mapreduce_job = from.dfs(
+ mapreduce(
+ input = hdfs_input, 
+ map = function(., v) keyval(v, 1), 
+ reduce = function(k, vv) keyval(k, length(vv))
+ )
+ )
+ 
+ result = as.data.frame(mapreduce_job)
+ result[order(result$val,decreasing=TRUE),]
+ 
+}
+mapreduce.for.freq("Genre")
+new.movie.data$Genre <- recode_factor(new.movie.data$Genre,
+ 'Action' = '8',
+ 'Comedy' = '7',
+ 'Drama' = '6',
+ 'Fantasy' = '5',
+ 'Horror' = '4',
+ 'Mystery' = '3',
+ 'Romance' = '2',
+ 'Thriller' = '1'
+)
+mapreduce.for.freq("Purpose")
+new.movie.data$Purpose <- recode_factor(new.movie.data$Purpose,
+ 'Entertainment factors' = '3',
+ 'Both' = '2',
+ 'Message oriented' = '1'
+)
+mapreduce.for.freq("Length")
+new.movie.data$Length <- recode_factor(new.movie.data$Length,
+ '1:30 to 2:00' = '5',
+ '2:00 to 2:30' = '4',
+ '2:30 to 3:00' = '3',
+ '1:00 to 1:30' = '2',
+ 'Less than 1:00 Hr' = '1'
+)
+mapreduce.for.freq("Language")
+new.movie.data$Language <- recode_factor(new.movie.data$Language,
+ 'Regional Languages(Tamil,Telugu,Malayalam,Kannada Etc)' = '3',
+ 'English' = '2',
+ 'Hindi' = '1'
+)
+mapreduce.for.freq("Platform")
+new.movie.data$Platform <- recode_factor(new.movie.data$Platform,
+ 'Theatres' = '3',
+ 'OTT' = '2',
+ 'During telecasting in T.V' = '1'
+)
+mapreduce.for.freq("Rating")
+new.movie.data$Rating <- recode_factor(new.movie.data$Rating,
+ 'Above 4' = '5',
+ 'Above 3' = '4',
+ '4.5 To 5' = '3',
+ 'Do not prefer rating' = '2',
+ 'Above 2' = '1'
+)
+mapreduce.for.freq("Cast factors")
+new.movie.data$`Cast factors` <- recode(new.movie.data$`Cast factors`,
+ 'Favourite Hero' = '5',
+ 'All of the above' = '4',
+ 'Do not prefer' = '3',
+ 'Favourite Director' = '2',
+ 'Favourite Heroine' = '1'
+)
+mapreduce.for.freq("External factors")
+new.movie.data$`External factors` <- recode(new.movie.data$`External factors`,
+ 'Public talk' = '4',
+ 'Based on Ratings' = '3',
+ 'Budget of the movie' = '2',
+ 'Do not prefer' = '1'
+)
+head(new.movie.data)
+tail(new.movie.data)
+movie <- read.csv("movie_data.csv")
+head(movie)
+movie$Genre <- recode_factor(movie$Genre,
+ 'Action' = '8',
+ 'Comedy' = '7',
+ 'Drama' = '6',
+ 'Fantasy' = '5',
+ 'Horror' = '4',
+ 'Mystery' = '3',
+ 'Romance' = '2',
+ 'Thriller' = '1'
+)
+movie$Purpose <- recode_factor(movie$Purpose,
+ 'Entertainment factors' = '3',
+ 'Both' = '2',
+ 'Message Oriented' = '1'
+)
+movie$Length <- recode_factor(movie$Length,
+ '1:30 to 2:00' = '5',
+ '2:00 to 2:30' = '4',
+ '2:30 to 3:00' = '3',
+ '1:00 to 1:30' = '2',
+ 'Less than 1:00 Hr' = '1'
+)
+movie$Language <- recode_factor(movie$Language,
+ 'Regional Languages(Tamil,Telugu,Malayalam,Kannada Etc)' = '3',
+ 'English' = '2',
+ 'Hindi' = '1'
+)
+movie$Platform <- recode_factor(movie$Platform,
+ 'Theatres' = '3',
+ 'OTT' = '2',
+ 'During telecasting in T.V' = '1'
+)
+movie$Rating <- recode_factor(movie$Rating,
+ 'Above 4' = '5',
+ 'Above 3' = '4',
+ '4.5 To 5' = '3',
+ 'Do not prefer rating' = '2',
+ 'Above 2' = '1'
+)
+head(movie)
+str(movie)
+movie$Genre <- as.numeric(as.character(movie$Genre))
+movie$Purpose <- as.numeric(as.character(movie$Purpose))
+movie$Length <- as.numeric(as.character(movie$Length))
+movie$Language <- as.numeric(as.character(movie$Language))
+movie$Platform <- as.numeric(as.character(movie$Platform))
+movie$Rating <- as.numeric(as.character(movie$Rating))
+str(movie)
+hdfs_input = to.dfs(movie$Name)
+func <- function(name){
+ res <- movie[movie$Name == name, ]
+ c(res$Genre, res$Purpose, res$Length, res$Language, res$Platform, res$Rating)
+}
+reduce_func <- function(k,v){
+ keyval (k,sum(v))
+}
+mapreduce_job = from.dfs(
+ mapreduce(
+ input = hdfs_input, 
+ map = function(., v) keyval(v, func(v)), 
+ reduce = reduce_func
+ )
+ )
+result = as.data.frame(mapreduce_job)
+result <- result[order(result$val,decreasing=TRUE),]
+head(result)
+# Top three movies - recommendation
+result[c(1:3),]
